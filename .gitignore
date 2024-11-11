@@ -54,3 +54,9 @@
 build/
 dist/
 lib/dynamixel_sdk.egg-info/
+
+# Calibration
+calibration_images*
+
+# Virtual Environment
+.venv*
