@@ -74,3 +74,25 @@ elif dxl_error != 0:
 
 # Close port
 portHandler.closePort()
+
+
+def Config4DOF(o4, x4_z, d1, a2, a3, a4):
+    q1 = np.arctan2(o4[1], o4[0])
+
+    x4_0 = np.array([
+        np.sqrt(1 - x4_z**2) * np.cos(q1),
+        np.sqrt(1 - x4_z**2) * np.sin(q1),
+        x4_z
+    ])
+
+    oc = o4 - a4 * x4_0
+
+    s = oc[2] - d1
+    r = np.sqrt(oc[0]**2 + oc[1]**2)
+    c3 = (r**2 + s**2 - a2**2 - a3**2) / (2 * a2 * a3)
+
+    q3 = np.arctan2(np.sqrt(1 - c3**2), c3)
+    q2 = np.arctan2(s, r) - np.arctan2(a3 * np.sin(q3), a2 + a3 * c3)
+    q4 = np.arcsin(x4_z) - (q2 + q3)
+
+    return q1, q2, q3, q4
