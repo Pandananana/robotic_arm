@@ -37,10 +37,10 @@ MOTOR_RANGE = {
     4: [150, 850],
 }
 MOTOR_CENTER = 512
-MOTOR_VALUE_DEGREES = 300.0 / 1023.0
+MOTOR_VALUE_RAD = 5.2360 / 1023.0
 
-def set_motor_pos(motor_id, degrees):
-    value = int(MOTOR_CENTER + degrees / MOTOR_VALUE_DEGREES)
+def set_motor_pos(motor_id, radians):
+    value = int(MOTOR_CENTER + radians / MOTOR_VALUE_RAD)
 
     # Check if value is within motor range
     if value < MOTOR_RANGE[motor_id][0]:
@@ -55,26 +55,6 @@ def set_motor_pos(motor_id, degrees):
         print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
     elif dxl_error != 0:
         print("%s" % packetHandler.getRxPacketError(dxl_error))
-
-
-set_motor_pos(1, 0)
-set_motor_pos(2, -15)
-set_motor_pos(3, -50)
-set_motor_pos(4, -100)
-
-
-
-time.sleep(1)
-# Disable Dynamixel Torque
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_TORQUE_ENABLE, TORQUE_DISABLE)
-if dxl_comm_result != COMM_SUCCESS:
-    print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
-elif dxl_error != 0:
-    print("%s" % packetHandler.getRxPacketError(dxl_error))
-
-# Close port
-portHandler.closePort()
-
 
 def Config4DOF(o4, x4_z, d1, a2, a3, a4):
     q1 = np.arctan2(o4[1], o4[0])
@@ -96,3 +76,21 @@ def Config4DOF(o4, x4_z, d1, a2, a3, a4):
     q4 = np.arcsin(x4_z) - (q2 + q3)
 
     return q1, q2, q3, q4
+
+
+q1, q2, q3, q4 = Config4DOF(np.array([0.15, 0.032, 0.12]), 0, 0.05, 0.093, 0.093, 0.05)
+set_motor_pos(1, q1)
+set_motor_pos(2, q2)
+set_motor_pos(3, q3)
+set_motor_pos(4, q4)
+
+time.sleep(1)
+# Disable Dynamixel Torque
+dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_TORQUE_ENABLE, TORQUE_DISABLE)
+if dxl_comm_result != COMM_SUCCESS:
+    print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
+elif dxl_error != 0:
+    print("%s" % packetHandler.getRxPacketError(dxl_error))
+
+# Close port
+portHandler.closePort()
