@@ -36,13 +36,20 @@ MOTOR_RANGE = {
     3: [50, 950],
     4: [150, 850],
 }
-
+MOTOR_CENTER = 512
 MOTOR_VALUE_DEGREES = 300.0 / 1023.0
 
 def set_motor_pos(motor_id, degrees):
-    center = 1023 / 2
-    value = int(center + degrees / MOTOR_VALUE_DEGREES)
-    # Write goal position
+    value = int(MOTOR_CENTER + degrees / MOTOR_VALUE_DEGREES)
+
+    # Check if value is within motor range
+    if value < MOTOR_RANGE[motor_id][0]:
+        value = MOTOR_RANGE[motor_id][0]
+        print("Value too low")
+    elif value > MOTOR_RANGE[motor_id][1]:
+        print("Value too high")
+        value = MOTOR_RANGE[motor_id][1]
+
     dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, motor_id, ADDR_MX_GOAL_POSITION, value)
     if dxl_comm_result != COMM_SUCCESS:
         print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
@@ -50,10 +57,10 @@ def set_motor_pos(motor_id, degrees):
         print("%s" % packetHandler.getRxPacketError(dxl_error))
 
 
-set_motor_pos(1, 45)
-set_motor_pos(2, 45)
-set_motor_pos(3, 45)
-set_motor_pos(4, 45)
+set_motor_pos(1, 0)
+set_motor_pos(2, -15)
+set_motor_pos(3, -50)
+set_motor_pos(4, -100)
 
 
 
