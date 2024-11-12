@@ -45,13 +45,13 @@ def set_motor_pos(motor_id, radians):
 
     value = int(MOTOR_CENTER + radians / MOTOR_VALUE_RAD)
 
-    # Check if value is within motor range
-    if value < MOTOR_RANGE[motor_id][0]:
-        value = MOTOR_RANGE[motor_id][0]
-        print("Value too low")
-    elif value > MOTOR_RANGE[motor_id][1]:
-        print("Value too high")
-        value = MOTOR_RANGE[motor_id][1]
+    # # Check if value is within motor range
+    # if value < MOTOR_RANGE[motor_id][0]:
+    #     value = MOTOR_RANGE[motor_id][0]
+    #     print("Value too low")
+    # elif value > MOTOR_RANGE[motor_id][1]:
+    #     print("Value too high")
+    #     value = MOTOR_RANGE[motor_id][1]
 
     dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, motor_id, ADDR_MX_GOAL_POSITION, value)
     if dxl_comm_result != COMM_SUCCESS:
@@ -74,14 +74,14 @@ def Config4DOF(o4, x4_z, d1, a2, a3, a4):
     r = np.sqrt(oc[0]**2 + oc[1]**2)
     c3 = (r**2 + s**2 - a2**2 - a3**2) / (2 * a2 * a3)
 
-    q3 = np.arctan2(np.sqrt(1 - c3**2), c3)
+    q3 = np.arctan2(-np.sqrt(1 - c3**2), c3)
     q2 = np.arctan2(s, r) - np.arctan2(a3 * np.sin(q3), a2 + a3 * c3)
     q4 = np.arcsin(x4_z) - (q2 + q3)
 
     return q1, q2, q3, q4
 
 
-q1, q2, q3, q4 = Config4DOF(np.array([0,-0.15,0.12]), 0, 0.05, 0.093, 0.093, 0.05)
+q1, q2, q3, q4 = Config4DOF(np.array([0,-0.10,0.22]), 0, 0.05, 0.093, 0.093, 0.05)
 
 # Print q1, q2, q3, q4 in degrees
 print(np.degrees([q1, q2, q3, q4]))
