@@ -81,7 +81,7 @@ def Config4DOF(o4, x4_z, d1, a2, a3, a4):
     return q1, q2, q3, q4
 
 
-q1, q2, q3, q4 = Config4DOF(np.array([0,-0.10,0.22]), 0, 0.05, 0.093, 0.093, 0.05)
+q1, q2, q3, q4 = Config4DOF(np.array([0.1,0,0.15]), -0.95, 0.05, 0.093, 0.093, 0.05)
 
 # Print q1, q2, q3, q4 in degrees
 print(np.degrees([q1, q2, q3, q4]))
