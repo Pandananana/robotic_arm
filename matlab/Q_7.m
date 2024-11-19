@@ -1,4 +1,6 @@
-function [Fk] = Q_7(t0, t1, q0, q0dd, q1, q1dd, nums, T4_0, J4, v0, v1,a0,a1)
+function [Fk] = Q_7(T, n, q0, q0dd, q1, q1dd, nums, T4_0, J4, v0, v1,a0,a1)
+    t1 = T/n;
+    t0 = 0;
     T4_0_f = matlabFunction(T4_0);
     J4_f = matlabFunction(J4);
     T_problem(:,:,1) = T4_0_f(q0(1),q0(2),q0(3),q0(4));
@@ -34,7 +36,7 @@ function [Fk] = Q_7(t0, t1, q0, q0dd, q1, q1dd, nums, T4_0, J4, v0, v1,a0,a1)
               0, 1, 2*t1, 3*t1^2, 4*t1^3, 5*t1^4;
               0, 0, 2, 6*t1, 12*t1^2, 20*t1^3];
     
-    for i = 1:length(q0);   
+    for i = 1:length(q0)   
 
         rhs(:,i) = [q0(i), q0d(i), q0dd(i), q1(i), q1d(i), q1dd(i)];
         C_0(i,:) = T_pol \ rhs(:,i);
