@@ -1,6 +1,11 @@
 import cv2
 import numpy as np
 import mediapipe as mp
+from main import INITIAL_POSITION, BASE_HEIGHT, goToCoordinates, goToStart
+import time
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 
 # Define the function to be called when the button is clicked
 ready = False
@@ -8,19 +13,27 @@ def button_click():
     global ready 
     global params
     ready = True
-    coordinates = find_coordinates(midpoints, None, params['sensor_width_pixels'], params['sensor_height_pixels'], params['fov_x'], params['fov_y'])
+    coordinates = find_coordinates(midpoints, INITIAL_POSITION, params['sensor_width_pixels'], params['sensor_height_pixels'], params['fov_x'], params['fov_y'])
+    plot_coordinates(coordinates)
+    goToCoordinates(coordinates)
 
-def find_coordinates(midpoints, homotrans, w, h, fov_x, fov_y):
-    print("Midpoints:", midpoints)
-    print("Homotrans:", homotrans)
-    print("Width:", w)
-    print("Height:", h)
-    print("FOV X:", fov_x)
-    print("FOV Y:", fov_y)
+def plot_coordinates(coordinates):
+    x = [coord[0] for coord in coordinates]
+    y = [coord[1] for coord in coordinates]
+    plt.scatter(x, y)
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Computed Coordinates')
+    plt.show()
+
+def find_coordinates(midpoints, camera_pos, w, h, fov_x, fov_y):
+    # Calculate the distance from the camera to the image plane
+    camera_height = camera_pos[2] + BASE_HEIGHT
 
     # Calculate the center of the image
     center_x = w / 2
     center_y = h / 2
+    center_position = INITIAL_POSITION - np.array([0, 0, camera_height])
 
     # Calculate the FOV in radians
     fov_x_rad = np.deg2rad(fov_x)
@@ -29,9 +42,6 @@ def find_coordinates(midpoints, homotrans, w, h, fov_x, fov_y):
     # Calculate pixels per radian
     px_per_rad_x = w / fov_x_rad
     px_per_rad_y = h / fov_y_rad
-
-    # Calculate the distance from the camera to the image plane
-    camera_height = 500
 
     # Create empty list to store the calculated coordinates
     coordinates = []
@@ -49,16 +59,26 @@ def find_coordinates(midpoints, homotrans, w, h, fov_x, fov_y):
         
         # Calculate distances on table using tangent
         # For small angles, tan(θ) ≈ θ, but we'll use tan for accuracy
-        x = camera_height * np.tan(angle_h)
-        y = camera_height * np.tan(angle_v)
+        x_relative = camera_height * np.tan(angle_h)
+        y_relative = camera_height * np.tan(angle_v)
 
-        print(f"Point: {point}, Angle H: {angle_h}, Angle V: {angle_v}, X: {x}, Y: {y}")
-        coordinates.append((x, y))
+        # Calculate the absolute coordinates
+        # x and y are swapped because of the camera orientation
+        x = center_position[0] - y_relative
+        y = center_position[1] - x_relative
+        z = 0
+
+        print(f"X: {x}, Y: {y}")
+        coordinates.append((x, y, z))
 
     return coordinates
 
 midpoints = []
+cap = None
 def process_video():
+    # Global variables
+    global cap
+
     # Initialize MediaPipe Hands
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.5)
@@ -90,6 +110,7 @@ def process_video():
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
+            print("Can't receive frame (stream end?). Exiting ...")
             break
 
         # Convert the BGR image to RGB
@@ -98,7 +119,7 @@ def process_video():
         # Process the frame with MediaPipe Hands
         results = hands.process(rgb_frame)
 
-        if results.multi_hand_landmarks and not ready:
+        if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
                 # Draw all landmarks on the frame
                 mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
@@ -146,6 +167,8 @@ params = {}
 def main():
     global params
     params = load_camera_params()
+
+    goToStart()
 
     process_video()
 

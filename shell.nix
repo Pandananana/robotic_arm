@@ -12,6 +12,7 @@ in pkgs.mkShell rec {
     # Python packages from nixpkgs
     pythonPackages.numpy
     pythonPackages.requests
+    pythonPackages.tkinter
 
     # OpenCV with GUI support
     (pythonPackages.opencv4.override { enableGtk2 = true; })
