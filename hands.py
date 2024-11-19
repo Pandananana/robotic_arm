@@ -66,7 +66,7 @@ def process_video():
 
     # Stream video from DroidCam app
     droid_cam_url = "http://192.168.86.26:4747/video"
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture("/dev/video4")
     if not cap.isOpened():
         print("Cannot open camera")
         exit()

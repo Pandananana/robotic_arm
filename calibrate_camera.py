@@ -92,7 +92,8 @@ def capture_calibration_images(output_folder="calibration_images", checkerboard_
     
     # Initialize camera
     droid_cam_url = "http://192.168.86.26:4747/video"
-    cap = cv2.VideoCapture(droid_cam_url)
+    webcam_url = "/dev/video4"
+    cap = cv2.VideoCapture(webcam_url)
     if not cap.isOpened():
         print("Camera not available. Using existing images from folder.")
         return [os.path.join(output_folder, f) for f in os.listdir(output_folder) if f.endswith('.jpg')]
