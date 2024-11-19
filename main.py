@@ -23,11 +23,11 @@ portHandler.openPort()
 portHandler.setBaudRate(BAUDRATE)
 for DXL_ID in DXL_IDS:
     packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_TORQUE_ENABLE, TORQUE_ENABLE)
-    packetHandler.write2ByteTxRx(portHandler, DXL_ID, ADDR_MX_CW_COMPLIANCE_MARGIN, 5)
-    packetHandler.write2ByteTxRx(portHandler, DXL_ID, ADDR_MX_CCW_COMPLIANCE_MARGIN, 5)
+    packetHandler.write2ByteTxRx(portHandler, DXL_ID, ADDR_MX_CW_COMPLIANCE_MARGIN, 3)
+    packetHandler.write2ByteTxRx(portHandler, DXL_ID, ADDR_MX_CCW_COMPLIANCE_MARGIN, 3)
     packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_CW_COMPLIANCE_SLOPE, 128)
     packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_CCW_COMPLIANCE_SLOPE, 128)
-    packetHandler.write2ByteTxRx(portHandler, DXL_ID, ADDR_MX_MOVING_SPEED, 1023)
+    packetHandler.write2ByteTxRx(portHandler, DXL_ID, ADDR_MX_MOVING_SPEED, 1023 if DXL_ID == 4 else 600)
 
 # Motor range found from live test
 MOTOR_RANGE = {
@@ -38,6 +38,8 @@ MOTOR_RANGE = {
 }
 MOTOR_CENTER = 512
 MOTOR_VALUE_RAD = 5.2360 / 1023.0
+INITIAL_POSITION = np.array([0.12,0,0])
+BASE_HEIGHT = 0.055 # meters
 
 def set_motor_pos(motor_id, radians):
     if motor_id == 2:
@@ -80,24 +82,41 @@ def Config4DOF(o4, x4_z, d1, a2, a3, a4):
 
     return q1, q2, q3, q4
 
+def goToCoordinates(coordinates):
+    for coord in coordinates:
+        q1, q2, q3, q4 = Config4DOF(coord, -0.95, 0.05, 0.093, 0.093, 0.05)
+        set_motor_pos(4, q4)
+        set_motor_pos(3, q3)
+        set_motor_pos(2, q2)
+        set_motor_pos(1, q1)
+        time.sleep(1)
+        goToStart()
+        time.sleep(1)
+        
 
-q1, q2, q3, q4 = Config4DOF(np.array([0.1,0,0.15]), -0.95, 0.05, 0.093, 0.093, 0.05)
+    time.sleep(1)
+    # Disable Dynamixel Torque
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_TORQUE_ENABLE, TORQUE_DISABLE)
+    if dxl_comm_result != COMM_SUCCESS:
+        print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
+    elif dxl_error != 0:
+        print("%s" % packetHandler.getRxPacketError(dxl_error))
 
-# Print q1, q2, q3, q4 in degrees
-print(np.degrees([q1, q2, q3, q4]))
+    # Close port
+    portHandler.closePort()
 
-set_motor_pos(1, q1)
-set_motor_pos(2, q2)
-set_motor_pos(3, q3)
-set_motor_pos(4, q4)
+def goToStart():
+    # Move to initial position
+    q1, q2, q3, q4 = Config4DOF(INITIAL_POSITION, -0.95, 0.05, 0.093, 0.093, 0.05)
+    set_motor_pos(4, q4)
+    set_motor_pos(3, q3)
+    set_motor_pos(2, q2)
+    set_motor_pos(1, q1)
+    
+    
+    
 
-time.sleep(1)
-# Disable Dynamixel Torque
-dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_TORQUE_ENABLE, TORQUE_DISABLE)
-if dxl_comm_result != COMM_SUCCESS:
-    print("%s" % packetHandler.getTxRxResult(dxl_comm_result))
-elif dxl_error != 0:
-    print("%s" % packetHandler.getRxPacketError(dxl_error))
 
-# Close port
-portHandler.closePort()
+
+
+
