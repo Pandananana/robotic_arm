@@ -12,9 +12,11 @@ ready = False
 def button_click():
     global ready 
     global params
+    cap.release()
+    cv2.destroyAllWindows()
     ready = True
-    coordinates = find_coordinates(midpoints, INITIAL_POSITION, params['sensor_width_pixels'], params['sensor_height_pixels'], params['fov_x'], params['fov_y'])
-    plot_coordinates(coordinates)
+    coordinates = find_coordinates(midpoints, INITIAL_POSITION, params['sensor_width_pixels'], params['sensor_height_pixels'], params['fov_x']+15, params['fov_y'])
+    # plot_coordinates(coordinates)
     goToCoordinates(coordinates)
 
 def plot_coordinates(coordinates):
@@ -28,12 +30,12 @@ def plot_coordinates(coordinates):
 
 def find_coordinates(midpoints, camera_pos, w, h, fov_x, fov_y):
     # Calculate the distance from the camera to the image plane
-    camera_height = camera_pos[2] + BASE_HEIGHT
+    camera_height = camera_pos[2] + BASE_HEIGHT + 0.02
 
     # Calculate the center of the image
     center_x = w / 2
     center_y = h / 2
-    center_position = INITIAL_POSITION - np.array([0, 0, camera_height])
+    center_position = INITIAL_POSITION + np.array([0.002,-0.01,0.04]) - np.array([0, 0, camera_height])
 
     # Calculate the FOV in radians
     fov_x_rad = np.deg2rad(fov_x)
@@ -69,7 +71,7 @@ def find_coordinates(midpoints, camera_pos, w, h, fov_x, fov_y):
         z = 0
 
         print(f"X: {x}, Y: {y}")
-        coordinates.append((x, y, z))
+        coordinates.append((x, y, z - BASE_HEIGHT + 0.02))
 
     return coordinates
 
