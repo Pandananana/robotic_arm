@@ -22,38 +22,36 @@ packetHandler = PacketHandler(PROTOCOL_VERSION)
 portHandler.openPort()
 portHandler.setBaudRate(BAUDRATE)
 for DXL_ID in DXL_IDS:
-    packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_TORQUE_ENABLE, TORQUE_ENABLE)
+    packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_TORQUE_ENABLE, TORQUE_DISABLE)
     packetHandler.write2ByteTxRx(portHandler, DXL_ID, ADDR_MX_CW_COMPLIANCE_MARGIN, 3)
     packetHandler.write2ByteTxRx(portHandler, DXL_ID, ADDR_MX_CCW_COMPLIANCE_MARGIN, 3)
     packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_CW_COMPLIANCE_SLOPE, 128)
     packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_CCW_COMPLIANCE_SLOPE, 128)
     packetHandler.write2ByteTxRx(portHandler, DXL_ID, ADDR_MX_MOVING_SPEED, 1023 if DXL_ID == 4 else 600)
 
-# Motor range found from live test
+# Motor range found from live testhttps://mcq.eksamen.dtu.dk/questionnaire#page=1
 MOTOR_RANGE = {
     1: [0, 1023],
     2: [200, 900],
     3: [50, 950],
     4: [150, 850],
 }
-MOTOR_CENTER = 512
+MOTOR_CENTER = {
+    1: 512,
+    2: 530,
+    3: 512,
+    4: 512,
+}
+
 MOTOR_VALUE_RAD = 5.2360 / 1023.0
-INITIAL_POSITION = np.array([0.12,0,0])
+INITIAL_POSITION = np.array([0.12,0,0.10])
 BASE_HEIGHT = 0.055 # meters
 
 def set_motor_pos(motor_id, radians):
     if motor_id == 2:
         radians -= np.pi / 2
 
-    value = int(MOTOR_CENTER + radians / MOTOR_VALUE_RAD)
-
-    # # Check if value is within motor range
-    # if value < MOTOR_RANGE[motor_id][0]:
-    #     value = MOTOR_RANGE[motor_id][0]
-    #     print("Value too low")
-    # elif value > MOTOR_RANGE[motor_id][1]:
-    #     print("Value too high")
-    #     value = MOTOR_RANGE[motor_id][1]
+    value = int(MOTOR_CENTER[motor_id] + radians / MOTOR_VALUE_RAD)
 
     dxl_comm_result, dxl_error = packetHandler.write2ByteTxRx(portHandler, motor_id, ADDR_MX_GOAL_POSITION, value)
     if dxl_comm_result != COMM_SUCCESS:
@@ -70,7 +68,8 @@ def Config4DOF(o4, x4_z, d1, a2, a3, a4):
         x4_z
     ])
 
-    oc = o4 - a4 * x4_0
+    d4 = 0.02
+    oc = o4 - a4 * x4_0 - d4 * np.cross([0, 0, 1], x4_0)
 
     s = oc[2] - d1
     r = np.sqrt(oc[0]**2 + oc[1]**2)
@@ -83,18 +82,30 @@ def Config4DOF(o4, x4_z, d1, a2, a3, a4):
     return q1, q2, q3, q4
 
 def goToCoordinates(coordinates):
-    for coord in coordinates:
-        q1, q2, q3, q4 = Config4DOF(coord, -0.95, 0.05, 0.093, 0.093, 0.05)
-        set_motor_pos(4, q4)
-        set_motor_pos(3, q3)
-        set_motor_pos(2, q2)
-        set_motor_pos(1, q1)
-        time.sleep(1)
-        goToStart()
-        time.sleep(1)
-        
+    while True:
+        for coord in coordinates:
+            q1, q2, q3, q4 = Config4DOF(coord, -0.95, 0.05, 0.093, 0.093, 0.05)
+            print(f"Going to {coord}")
+            set_motor_pos(4, q4)
+            set_motor_pos(3, q3)
+            set_motor_pos(2, q2)
+            set_motor_pos(1, q1)
+            time.sleep(0.3)
+            goToStart()
+            time.sleep(0.2)
+    stopMotors()
+    
 
-    time.sleep(1)
+def goToStart():
+    # Move to initial position
+    q1, q2, q3, q4 = Config4DOF(INITIAL_POSITION, -1, 0.05, 0.093, 0.093, 0.05)
+    set_motor_pos(1, q1)
+    set_motor_pos(2, q2)
+    set_motor_pos(3, q3)
+    time.sleep(0.15)
+    set_motor_pos(4, q4)
+
+def stopMotors():
     # Disable Dynamixel Torque
     dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_MX_TORQUE_ENABLE, TORQUE_DISABLE)
     if dxl_comm_result != COMM_SUCCESS:
@@ -104,15 +115,12 @@ def goToCoordinates(coordinates):
 
     # Close port
     portHandler.closePort()
-
-def goToStart():
-    # Move to initial position
-    q1, q2, q3, q4 = Config4DOF(INITIAL_POSITION, -0.95, 0.05, 0.093, 0.093, 0.05)
-    set_motor_pos(4, q4)
-    set_motor_pos(3, q3)
-    set_motor_pos(2, q2)
-    set_motor_pos(1, q1)
     
+
+# set_motor_pos(1, 0)
+# set_motor_pos(2, 0)
+# set_motor_pos(3, 0)
+# set_motor_pos(4, 0)
     
     
 
